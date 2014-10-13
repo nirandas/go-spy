@@ -68,6 +68,17 @@ func (c *Call) Bool(i int) bool {
 	return c.expectation.ret[i].(bool)
 }
 
+func (c *Call) Error(i int) error {
+	if c.expectation.ret[i] == nil {
+		return nil
+	}
+	return c.expectation.ret[i].(error)
+}
+
+func (c *Call) Get(i int) interface{} {
+	return c.expectation.ret[i]
+}
+
 type Spy struct {
 	expectations []*Expectation
 	calls        []*Call
@@ -111,7 +122,7 @@ func (spy *Spy) Verify(t *testing.T) {
 	fail := 0
 	for _, e := range spy.expectations {
 		if len(e.calls) == 0 {
-			t.Log(fmt.Sprintf("Expected %s %v to be called", e.funcName, e.arguments))
+			t.Errorf("Expected %s %v to be called", e.funcName, e.arguments)
 			fail++
 		}
 	}
