@@ -1,12 +1,19 @@
+//spy Provides ability to spy on calls made to an interface
 package spy
 
 import (
 	"fmt"
 	"runtime"
 	"strings"
-	"testing"
 )
 
+type Logger interface {
+	Fail()
+	Errorf(format string, args ...interface{})
+}
+
+//Match matches a slice of v interface{} against a slice of m Matcher interface
+//and returns true if each element in the v passes the match against the same element in m
 func Match(v []interface{}, m []Matcher) bool {
 	if len(v) != len(m) {
 		return false
@@ -37,9 +44,20 @@ func NewExpectation(funcName string, m ...Matcher) *Expectation {
 	}
 }
 
+//Return Set the return values for the call
 func (e *Expectation) Return(values ...interface{}) *Expectation {
 	e.ret = values
 	return e
+}
+
+//HasReturns HasReturns returns true if expectation has return values
+func (e *Expectation) HasReturns() bool {
+	return len(e.ret) > 0
+}
+
+//CountReturn returns number of return values
+func (e *Expectation) CountReturns() int {
+	return len(e.ret)
 }
 
 type Call struct {
@@ -56,6 +74,12 @@ func NewCall(e *Expectation, args ...interface{}) *Call {
 	}
 }
 
+//CountReturns Returns number of return values
+func (c *Call) CountReturns() int {
+	return c.expectation.CountReturns()
+}
+
+//String Returns the return value at the provided index as a string. Will panic if out of bounds or value can not be converted to string
 func (c *Call) String(i int) string {
 	return c.expectation.ret[i].(string)
 }
@@ -64,10 +88,12 @@ func (c *Call) Int(i int) int {
 	return c.expectation.ret[i].(int)
 }
 
+//Bool Returns the return value at the provided index as a bool . Will panic if out of bounds or value can not be converted to bool
 func (c *Call) Bool(i int) bool {
 	return c.expectation.ret[i].(bool)
 }
 
+//Error Returns the return value at the provided index as a error. Will panic if out of bounds or value can not be converted to error. Handles nill error values gracefully.
 func (c *Call) Error(i int) error {
 	if c.expectation.ret[i] == nil {
 		return nil
@@ -75,10 +101,13 @@ func (c *Call) Error(i int) error {
 	return c.expectation.ret[i].(error)
 }
 
+//Get returns the return value at the provided index
 func (c *Call) Get(i int) interface{} {
 	return c.expectation.ret[i]
 }
 
+//Spy provides call spying functionalities
+//Should be embed in the struct to be mocked
 type Spy struct {
 	expectations []*Expectation
 	calls        []*Call
@@ -93,12 +122,16 @@ func (spy *Spy) findMatchingExpectation(funcName string, args ...interface{}) *E
 	return nil
 }
 
+//When sets up expectations
+//First argument should be the method name and following arguments should be matchers which can be used to match arguments of call
 func (spy *Spy) When(funcName string, matchers ...Matcher) *Expectation {
 	e := NewExpectation(funcName, matchers...)
 	spy.expectations = append(spy.expectations, e)
 	return e
 }
 
+//Called records the call and returns the Call struct which can be used to access return values
+//this is to be called in each of the interface method to be spied
 func (spy *Spy) Called(args ...interface{}) *Call {
 	pc, _, _, ok := runtime.Caller(1)
 	if !ok {
@@ -118,7 +151,9 @@ func (spy *Spy) Called(args ...interface{}) *Call {
 	return c
 }
 
-func (spy *Spy) Verify(t *testing.T) {
+//Verify verifies all expectations were met
+//pass a struct implementing the Logger  interface. The testing.T in golang's testing package satisfies the Logger interface
+func (spy *Spy) Verify(t Logger) {
 	fail := 0
 	for _, e := range spy.expectations {
 		if len(e.calls) == 0 {
