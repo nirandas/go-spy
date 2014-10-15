@@ -158,4 +158,32 @@ var _ = Describe("Matchers", func() {
 		})
 	})
 
+	Describe("Type matcher", func() {
+		m := Type("*int")
+		It("Match *int", func() {
+var i int
+			Expect(m.Match(&i)).To(BeTrue())
+		})
+		It("Does not Matche non-*int", func() {
+			Expect(m.Match(1)).To(BeFalse())
+			Expect(m.Match("1")).To(BeFalse())
+			Expect(m.Match(nil)).To(BeFalse())
+		})
+	})
+
+	Describe("Custom matcher", func() {
+		m := Custom(func(a interface{})bool{
+v,ok:=a.(string)
+return ok && len(v)>4
+})
+		It("Match 'foobar'", func() {
+			Expect(m.Match("foobar")).To(BeTrue())
+		})
+		It("Does not Matche non-string or strings less than 4", func() {
+			Expect(m.Match(1)).To(BeFalse())
+			Expect(m.Match("1")).To(BeFalse())
+			Expect(m.Match(nil)).To(BeFalse())
+		})
+	})
+
 })
