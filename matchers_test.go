@@ -3,187 +3,189 @@ package spy_test
 import (
 	. "github.com/nirandas/go-spy"
 
-	. "github.com/onsi/ginkgo"
+	//	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"testing"
 )
 
-var _ = Describe("Matchers", func() {
+var trueMatcher, falseMatcher, stringMatcher, intMatcher, int64Matcher, uint64Matcher, anythingMatcher, nilMatcher, notNilMatcher, typeMatcher, customMatcher Matcher
 
-	Describe("String matcher", func() {
-		s := String("Foo")
-
-		It("Does not panic when matched against non-string", func() {
-			Expect(func() {
-				s.Match(2)
-			}).ShouldNot(Panic())
-		})
-
-		It("Matches 'Foo'", func() {
-			Expect(s.Match("Foo")).To(BeTrue())
-		})
-
-		It("Does not match 'bar'", func() {
-			Expect(s.Match("bar")).To(BeFalse())
-		})
-
+func init() {
+	trueMatcher = Bool(true)
+	falseMatcher = Bool(false)
+	stringMatcher = String("Foo")
+	intMatcher = Int(1)
+	int64Matcher = Int64(1)
+	uint64Matcher = Uint64(1)
+	anythingMatcher = Anything()
+	nilMatcher = Nil()
+	notNilMatcher = NotNil()
+	typeMatcher = Type("*int")
+	customMatcher = Custom(func(a interface{}) bool {
+		v, ok := a.(string)
+		return ok && len(v) > 4
 	})
+}
 
-	Describe("Boolng matcher", func() {
-		t := Bool(true)
-		f := Bool(false)
+func TestMatchesFoo(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(stringMatcher.Match("Foo")).To(BeTrue(), "failed to match 'Foo' with 'Foo'")
+}
 
-		It("Does not panic when matched against non-bool", func() {
-			Expect(func() {
-				t.Match("a")
-				f.Match("a")
-			}).ShouldNot(Panic())
-		})
+func Test_does_not_panic_when_matched_against_non_string(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(func() {
+		stringMatcher.Match(2)
+	}).ShouldNot(Panic(), "String matcher should not panic")
+}
 
-		It("matches", func() {
-			Expect(t.Match(true)).To(BeTrue())
-			Expect(f.Match(false))
-		})
+func Test_does_not_match_bar(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(stringMatcher.Match("bar")).To(BeFalse())
+}
 
-		It("Does not match", func() {
-			Expect(t.Match(false)).To(BeFalse())
-			Expect(f.Match(true)).To(BeFalse())
-		})
+func Test_does_not_panic_when_matched_against_non_bool(t *testing.T) {
+	Expect(func() {
+		trueMatcher.Match("a")
+		falseMatcher.Match("a")
+	}).ShouldNot(Panic())
+}
 
-	})
+func Test_bool_matches(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(trueMatcher.Match(true)).To(BeTrue())
+	Expect(falseMatcher.Match(false))
+}
 
-	Describe("int matcher", func() {
-		i := Int(1)
+func Test_bool_does__not_match(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(trueMatcher.Match(false)).To(BeFalse())
+	Expect(falseMatcher.Match(true)).To(BeFalse())
+}
 
-		It("Does not panic when matched against non-int", func() {
-			Expect(func() {
-				Expect(i.Match(uint(1))).To(BeFalse())
-			}).ShouldNot(Panic())
-		})
+func Test_does_not_panic_when_matched_against_non_int(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(func() {
+		Expect(intMatcher.Match(uint(1))).To(BeFalse())
+	}).ShouldNot(Panic())
+}
 
-		It("Matches 1", func() {
-			Expect(i.Match(1)).To(BeTrue())
-		})
+func Test_int_matches_1(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(intMatcher.Match(1)).To(BeTrue())
+}
 
-		It("Does not match 2", func() {
-			Expect(i.Match(2)).To(BeFalse())
-		})
+func Test_does_not_match_2(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(intMatcher.Match(2)).To(BeFalse())
+}
 
-		It("Does not match uint or int32 or int64", func() {
-			Expect(i.Match(uint(1))).To(BeFalse())
-			Expect(i.Match(int64(1))).To(BeFalse())
-			Expect(i.Match(int32(1))).To(BeFalse())
-		})
+func Test_does_not_match_uint_or_int32_or_int64(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(intMatcher.Match(uint(1))).To(BeFalse())
+	Expect(intMatcher.Match(int64(1))).To(BeFalse())
+	Expect(intMatcher.Match(int32(1))).To(BeFalse())
+}
 
-	})
+func Test_does_not_panic_when_matched_against_non_int64(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(func() {
+		Expect(int64Matcher.Match(uint(1))).To(BeFalse())
+	}).ShouldNot(Panic())
+}
 
-	Describe("int64 matcher", func() {
-		i := Int64(1)
+func Test_matches1(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(int64Matcher.Match(int64(1))).To(BeTrue())
+}
 
-		It("Does not panic when matched against non-int", func() {
-			Expect(func() {
-				Expect(i.Match(uint(1))).To(BeFalse())
-			}).ShouldNot(Panic())
-		})
+func Test_does_not_matches2(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(int64Matcher.Match(int64(2))).To(BeFalse())
+}
 
-		It("Matches 1", func() {
-			Expect(i.Match(int64(1))).To(BeTrue())
-		})
+func Test_does_not_matches_uint_int_int(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(int64Matcher.Match(uint(1))).To(BeFalse())
+	Expect(int64Matcher.Match(int(1))).To(BeFalse())
+	Expect(int64Matcher.Match(int32(1))).To(BeFalse())
+}
 
-		It("Does not match 2", func() {
-			Expect(i.Match(int64(2))).To(BeFalse())
-		})
+func Test_does_not_panic_when_matchedagainst_no_uint64(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(func() {
+		Expect(uint64Matcher.Match(int(1))).To(BeFalse())
+	}).ShouldNot(Panic())
+}
 
-		It("Does not match uint or int32 or int", func() {
-			Expect(i.Match(uint(1))).To(BeFalse())
-			Expect(i.Match(int(1))).To(BeFalse())
-			Expect(i.Match(int32(1))).To(BeFalse())
-		})
+func Test_matches_uint1(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(uint64Matcher.Match(uint64(1))).To(BeTrue())
+}
 
-	})
+func Test_does_not_matches_uint2(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(uint64Matcher.Match(uint64(2))).To(BeFalse())
+}
 
-	Describe("uint64 matcher", func() {
-		i := Uint64(1)
+func Test_does_not_match_uint_int32_int(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(uint64Matcher.Match(uint(1))).To(BeFalse())
+	Expect(uint64Matcher.Match(int(1))).To(BeFalse())
+	Expect(uint64Matcher.Match(int32(1))).To(BeFalse())
+}
 
-		It("Does not panic when matched against non-uint64", func() {
-			Expect(func() {
-				Expect(i.Match(int(1))).To(BeFalse())
-			}).ShouldNot(Panic())
-		})
+func Test_matches_anything(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(anythingMatcher.Match(nil)).To(BeTrue())
+	Expect(anythingMatcher.Match("1")).To(BeTrue())
+	Expect(anythingMatcher.Match(1)).To(BeTrue())
+	Expect(anythingMatcher.Match(String("test"))).To(BeTrue())
+}
 
-		It("Matches 1", func() {
-			Expect(i.Match(uint64(1))).To(BeTrue())
-		})
+func Test_matches_nil(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(nilMatcher.Match(nil)).To(BeTrue())
+}
 
-		It("Does not match 2", func() {
-			Expect(i.Match(uint64(2))).To(BeFalse())
-		})
+func Test_does_not_matches_non_nil(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(nilMatcher.Match("value")).To(BeFalse())
+	Expect(nilMatcher.Match(10)).To(BeFalse())
+}
 
-		It("Does not match uint or int32 or int", func() {
-			Expect(i.Match(uint(1))).To(BeFalse())
-			Expect(i.Match(int(1))).To(BeFalse())
-			Expect(i.Match(int32(1))).To(BeFalse())
-		})
+func Test_match_not_nil(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(notNilMatcher.Match("value")).To(BeTrue())
+	Expect(notNilMatcher.Match(10)).To(BeTrue())
+}
 
-	})
+func Test_does_not_match_nnil(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(notNilMatcher.Match(nil)).To(BeFalse())
+}
 
-	Describe("Anything matcher", func() {
-		m := Anything()
-		It("Matches anything", func() {
-			Expect(m.Match(nil)).To(BeTrue())
-			Expect(m.Match("1")).To(BeTrue())
-			Expect(m.Match(1)).To(BeTrue())
-			Expect(m.Match(String("test"))).To(BeTrue())
-		})
-	})
+func Test_match_pointer_int(t *testing.T) {
+	RegisterTestingT(t)
+	var i int
+	Expect(typeMatcher.Match(&i)).To(BeTrue())
+}
 
-	Describe("Nil matcher", func() {
-		m := Nil()
-		It("Matches nil", func() {
-			Expect(m.Match(nil)).To(BeTrue())
-		})
-		It("Does not matches not nil", func() {
-			Expect(m.Match("value")).To(BeFalse())
-			Expect(m.Match(10)).To(BeFalse())
-		})
-	})
+func Test_does_not_match_no_pointer_int(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(typeMatcher.Match(1)).To(BeFalse())
+	Expect(typeMatcher.Match("1")).To(BeFalse())
+	Expect(typeMatcher.Match(nil)).To(BeFalse())
+}
 
-	Describe("NotNil matcher", func() {
-		m := NotNil()
-		It("Match not nil", func() {
-			Expect(m.Match("value")).To(BeTrue())
-			Expect(m.Match(10)).To(BeTrue())
-		})
-		It("Does not Matches nil", func() {
-			Expect(m.Match(nil)).To(BeFalse())
-		})
-	})
+func Test_match_foobar(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(customMatcher.Match("foobar")).To(BeTrue())
+}
 
-	Describe("Type matcher", func() {
-		m := Type("*int")
-		It("Match *int", func() {
-var i int
-			Expect(m.Match(&i)).To(BeTrue())
-		})
-		It("Does not Matche non-*int", func() {
-			Expect(m.Match(1)).To(BeFalse())
-			Expect(m.Match("1")).To(BeFalse())
-			Expect(m.Match(nil)).To(BeFalse())
-		})
-	})
-
-	Describe("Custom matcher", func() {
-		m := Custom(func(a interface{})bool{
-v,ok:=a.(string)
-return ok && len(v)>4
-})
-		It("Match 'foobar'", func() {
-			Expect(m.Match("foobar")).To(BeTrue())
-		})
-		It("Does not Matche non-string or strings less than 4", func() {
-			Expect(m.Match(1)).To(BeFalse())
-			Expect(m.Match("1")).To(BeFalse())
-			Expect(m.Match(nil)).To(BeFalse())
-		})
-	})
-
-})
+func Test_does_not_match_non_string_or_string_lesthan_4_len(t *testing.T) {
+	RegisterTestingT(t)
+	Expect(customMatcher.Match(1)).To(BeFalse())
+	Expect(customMatcher.Match("1")).To(BeFalse())
+	Expect(customMatcher.Match(nil)).To(BeFalse())
+}

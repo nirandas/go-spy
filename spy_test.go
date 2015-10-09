@@ -4,94 +4,80 @@ import (
 	"errors"
 	. "github.com/nirandas/go-spy"
 
-	. "github.com/onsi/ginkgo"
+	//	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"testing"
 )
 
-var _ = Describe("Expectation", func() {
-	var e *Expectation
-	BeforeEach(func() {
-		e = NewExpectation("Something")
-		Expect(e).ShouldNot(BeNil())
-	})
-	It("sets returns", func() {
-		Expect(e.HasReturns()).To(BeFalse())
-		e.Return(1, 2)
-		Expect(e.HasReturns()).To(BeTrue())
-	})
-})
+func Test_new_expectation_creates_new(t *testing.T) {
+	RegisterTestingT(t)
+	e := NewExpectation("Something")
+	Expect(e).ShouldNot(BeNil())
+	Expect(e.HasReturns()).To(BeFalse())
+}
 
-var _ = Describe("Call", func() {
+func Test_expectation_can_set_returns(t *testing.T) {
+	RegisterTestingT(t)
+	e := NewExpectation("Something")
+	e.Return(1, 2)
+	Expect(e.HasReturns()).To(BeTrue())
+	Expect(e.CountReturns()).To(Equal(2))
+}
+
+func Test_call_return_values(t *testing.T) {
+	RegisterTestingT(t)
 	var c *Call
-	BeforeEach(func() {
-		e := NewExpectation("Something")
-		e.Return("ok", int(1), true, errors.New("dummy"), nil)
-		c = NewCall(e)
-		Expect(c).ShouldNot(BeNil())
-	})
+	e := NewExpectation("Something")
+	e.Return("ok", int(1), true, errors.New("dummy"), nil)
+	c = NewCall(e)
+	Expect(c).ShouldNot(BeNil())
+	//can access return as string
+	Expect(c.String(0)).To(Equal("ok"))
+	//can access return as int
+	Expect(c.Int(1)).To(Equal(1))
+	//can access return as bool
+	Expect(c.Bool(2)).To(Equal(true))
+	//can access return as error
+	Expect(c.Error(3)).To(HaveOccurred())
+	//can access return as nil error
+	Expect(c.Error(4)).To(BeNil())
+}
 
-	It("Has 5 returns", func() {
-		Expect(c.CountReturns()).To(Equal(5))
-	})
+func Test_spy_verification_exits_if_calls_missing_(t *testing.T) {
+	RegisterTestingT(t)
+	s := TestImplementation{}
+	//setup expectation
+	s.When("DoSomething", String("Hi")).Return("Bye")
 
-	It("can access return as string", func() {
-		Expect(c.String(0)).To(Equal("ok"))
-	})
+	//mock loger for verifying spy.Verify()
+	//calls Errorf(...) and Fail() on missing call
+	logger := &TB{}
+	logger.When("Errorf", Anything(), Anything(), Anything())
+	logger.When("Fail")
+	defer logger.Verify(t)
+	//call s.Verify and pass mock logger
+	s.Verify(logger)
+}
 
-	It("can access return as int", func() {
-		Expect(c.Int(1)).To(Equal(1))
-	})
+func Test_it_identifies_proper_expectation(t *testing.T) {
+	RegisterTestingT(t)
+	s := TestImplementation{}
+	//setup expectation
+	s.When("DoSomething", String("Hi")).Return("Bye")
 
-	It("can access return as bool", func() {
-		Expect(c.Bool(2)).To(Equal(true))
-	})
+	c := s.DoSomething("Hi")
+	Expect(c.String(0)).To(Equal("Bye"))
+}
 
-	It("can access return as error", func() {
-		Expect(c.Error(3)).To(HaveOccurred())
-	})
-
-	It("can access return as nil error", func() {
-		Expect(c.Error(4)).To(BeNil())
-	})
-
-})
-
-var _ = Describe("Spy", func() {
-	var s TestImplementation
-	BeforeEach(func() {
-		s = TestImplementation{}
-	})
-
-	Describe("with expectations", func() {
-		BeforeEach(func() {
-			e := s.When("DoSomething", String("Hi"))
-			Expect(e).ShouldNot(BeNil())
-			e.Return("Bye")
-		})
-
-		It("calls Errorf(...) and Fail() on missing call", func() {
-			t := &TB{}
-			t.When("Errorf", Anything(), Anything(), Anything())
-			t.When("Fail")
-			defer t.Verify(GinkgoT())
-
-			s.Verify(t)
-		})
-
-		It("identifies proper expectation", func() {
-			c := s.DoSomething("Hi")
-			Expect(c.String(0)).To(Equal("Bye"))
-		})
-
-		It("panics on unexpected call", func() {
-			Expect(func() {
-				s.DoSomething("Hi", "Hello")
-			}).Should(Panic())
-		})
-
-	})
-
-})
+func Test_panics_on_unexpected_call(t *testing.T) {
+	RegisterTestingT(t)
+	s := TestImplementation{}
+	//setup expectation
+	s.When("DoSomething", String("Hi")).Return("Bye")
+	Expect(func() {
+		s.DoSomething("Hi", "Hello")
+	}).Should(Panic())
+}
 
 type TestImplementation struct {
 	Spy

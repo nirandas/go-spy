@@ -3,6 +3,7 @@ package spy
 
 import (
 	"fmt"
+	"reflect"
 	"runtime"
 	"strings"
 )
@@ -35,18 +36,25 @@ type Expectation struct {
 	arguments []Matcher
 	ret       []interface{}
 	calls     []*Call
+	set       map[int]interface{}
 }
 
 func NewExpectation(funcName string, m ...Matcher) *Expectation {
 	return &Expectation{
 		funcName:  funcName,
 		arguments: m,
+		set:       make(map[int]interface{}),
 	}
 }
 
 //Return Set the return values for the call
 func (e *Expectation) Return(values ...interface{}) *Expectation {
 	e.ret = values
+	return e
+}
+
+func (e *Expectation) Set(index int, v interface{}) *Expectation {
+	e.set[index] = v
 	return e
 }
 
@@ -148,6 +156,23 @@ func (spy *Spy) Called(args ...interface{}) *Call {
 	c := NewCall(e, args...)
 	e.calls = append(e.calls, c)
 	spy.calls = append(spy.calls, c)
+
+	if len(e.set) > 0 {
+		for index, set := range e.set {
+			if index < 0 || index >= len(args) {
+				continue
+			}
+			value := reflect.ValueOf(args[index])
+			if value.Kind() != reflect.Ptr && value.Kind() != reflect.Interface {
+				continue
+			}
+			value = value.Elem()
+			if value.CanSet() {
+				value.Set(reflect.ValueOf(set))
+			}
+		}
+	}
+
 	return c
 }
 

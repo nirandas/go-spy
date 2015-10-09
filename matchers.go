@@ -1,6 +1,7 @@
 package spy
-import(
-"reflect"
+
+import (
+	"reflect"
 )
 
 type Matcher interface {
@@ -96,33 +97,49 @@ func (m uint64Matcher) Match(v interface{}) bool {
 //Uint64 returns a matcher which can match against provided uint64 value
 func Uint64(i uint64) Matcher { return uint64Matcher{i} }
 
-type typeMatcher struct{
-value string
+type typeMatcher struct {
+	value string
 }
 
 //Type returns a Matcher which matches the type against the string argument.
 // Example Type("*int")
 // Will match a pointer to int
-func (m typeMatcher) Match(v interface{})bool{
-if v==nil{
-return false
-}
-return reflect.TypeOf(v).String() == m.value
-}
-
-func Type(t string)Matcher{
-return typeMatcher{t}
+func (m typeMatcher) Match(v interface{}) bool {
+	if v == nil {
+		return false
+	}
+	return reflect.TypeOf(v).String() == m.value
 }
 
-type customMatcher struct{
-value func(v interface{})bool
+func Type(t string) Matcher {
+	return typeMatcher{t}
 }
 
-func (m customMatcher) Match(v interface{})bool{
-return m.value(v)
+type customMatcher struct {
+	value func(v interface{}) bool
+}
+
+func (m customMatcher) Match(v interface{}) bool {
+	return m.value(v)
 }
 
 //Custom wrapps a custom func with Matcher interface
-func Custom(f func(v interface{})bool)Matcher{
-return customMatcher{f}
+func Custom(f func(v interface{}) bool) Matcher {
+	return customMatcher{f}
+}
+
+type exactMatcher struct {
+	value interface{}
+}
+
+func (m exactMatcher) Match(v interface{}) bool {
+	if v == nil {
+		return m.value == v
+	}
+	return reflect.DeepEqual(m.value, v)
+}
+
+//Exact only matches the same value. Uses reflect.DeepEqual
+func Exact(v interface{}) Matcher {
+	return exactMatcher{v}
 }
