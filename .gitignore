@@ -1,2 +1,4 @@
 *.exe
 *.log
+.idea/
+.DS_Stores

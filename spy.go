@@ -114,6 +114,10 @@ func (c *Call) Get(i int) interface{} {
 	return c.expectation.ret[i]
 }
 
+func (c *Call) GetArg(i int) interface{} {
+	return c.arguments[i]
+}
+
 //Spy provides call spying functionalities
 //Should be embed in the struct to be mocked
 type Spy struct {
@@ -190,4 +194,22 @@ func (spy *Spy) Verify(t Logger) {
 	if fail > 0 {
 		t.Fail()
 	}
+}
+
+func (spy *Spy) GetCallsOf(funcName string) []*Call {
+	matchingCalls := []*Call{}
+	for _,v := range spy.calls {
+		if v.name == funcName {
+			matchingCalls = append(matchingCalls, v)
+		}
+	}
+	return matchingCalls
+}
+
+func (spy *Spy) GetCall(funcName string, index int) *Call{
+	return spy.GetCallsOf(funcName)[index]
+}
+
+func (spy *Spy) CallCount(funcName string) int {
+	return len(spy.GetCallsOf(funcName))
 }

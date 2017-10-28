@@ -1,7 +1,7 @@
 package spy_test
 
 import (
-	. "github.com/nirandas/go-spy"
+	. "github.com/EugeneKostrikov/go-spy"
 
 	//	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
