@@ -118,6 +118,10 @@ func (c *Call) GetArg(i int) interface{} {
 	return c.arguments[i]
 }
 
+func (c *Call) GetReturnValue(index int) interface{}{
+	return c.expectation.ret[index]
+}
+
 //Spy provides call spying functionalities
 //Should be embed in the struct to be mocked
 type Spy struct {
