@@ -24,6 +24,25 @@ func Test_expectation_can_set_returns(t *testing.T) {
 	Expect(e.CountReturns()).To(Equal(2))
 }
 
+func Test_expectation_can_mutate_argument(t *testing.T) {
+	RegisterTestingT(t)
+	imp := TestImplementation{}
+	imp.Spy.
+		When("DoSomething", Anything()).
+		MutateArg(0, func(arg interface{}) {
+			typed := arg.(map[string]string)
+			typed["mutated"] = "ok"
+		})
+
+	arg := map[string]string{
+		"testing": "1",
+	}
+	imp.DoSomething(arg)
+
+	Expect(arg["mutated"]).To(Equal("ok"))
+
+}
+
 func Test_call_return_values(t *testing.T) {
 	RegisterTestingT(t)
 	var c *Call
@@ -79,7 +98,7 @@ func Test_panics_on_unexpected_call(t *testing.T) {
 	}).Should(Panic())
 }
 
-func Test_spy_returns_correct_call(t *testing.T){
+func Test_spy_returns_correct_call(t *testing.T) {
 	RegisterTestingT(t)
 	s := TestImplementation{}
 	s.When("DoSomething", String("Hi")).Return("Bye")
@@ -91,7 +110,7 @@ func Test_spy_returns_correct_call(t *testing.T){
 	Expect(s.CallCount("DoSomething")).To(Equal(2))
 }
 
-func Test_spy_returns_call_by_index(t *testing.T){
+func Test_spy_returns_call_by_index(t *testing.T) {
 	RegisterTestingT(t)
 	s := TestImplementation{}
 	s.When("DoSomething", String("Hi")).Return("Bye")
@@ -102,8 +121,6 @@ func Test_spy_returns_call_by_index(t *testing.T){
 	Expect(s.GetCall("DoSomething", 0).GetArg(0)).To(Equal("Hi"))
 	Expect(s.GetCall("DoSomething", 1).GetArg(0)).To(Equal("Hey"))
 }
-
-
 
 type TestImplementation struct {
 	Spy

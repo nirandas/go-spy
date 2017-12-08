@@ -31,11 +31,17 @@ func Match(v []interface{}, m []Matcher) bool {
 	return true
 }
 
+type Mutator struct {
+	index    int
+	callback func(interface{})
+}
+
 type Expectation struct {
 	funcName  string
 	arguments []Matcher
 	ret       []interface{}
 	calls     []*Call
+	mutators  []*Mutator
 	set       map[int]interface{}
 }
 
@@ -45,6 +51,20 @@ func NewExpectation(funcName string, m ...Matcher) *Expectation {
 		arguments: m,
 		set:       make(map[int]interface{}),
 	}
+}
+
+func (e *Expectation) ApplyMutations(call *Call) {
+	for _, mutator := range e.mutators {
+		arg := call.GetArg(mutator.index)
+		mutator.callback(arg)
+	}
+}
+
+func (e *Expectation) MutateArg(index int, callback func(interface{})) {
+	e.mutators = append(e.mutators, &Mutator{
+		index:    index,
+		callback: callback,
+	})
 }
 
 //Return Set the return values for the call
@@ -118,7 +138,7 @@ func (c *Call) GetArg(i int) interface{} {
 	return c.arguments[i]
 }
 
-func (c *Call) GetReturnValue(index int) interface{}{
+func (c *Call) GetReturnValue(index int) interface{} {
 	return c.expectation.ret[index]
 }
 
@@ -163,6 +183,7 @@ func (spy *Spy) Called(args ...interface{}) *Call {
 	}
 	c := NewCall(e, args...)
 	e.calls = append(e.calls, c)
+	e.ApplyMutations(c)
 	spy.calls = append(spy.calls, c)
 
 	if len(e.set) > 0 {
@@ -202,7 +223,7 @@ func (spy *Spy) Verify(t Logger) {
 
 func (spy *Spy) GetCallsOf(funcName string) []*Call {
 	matchingCalls := []*Call{}
-	for _,v := range spy.calls {
+	for _, v := range spy.calls {
 		if v.name == funcName {
 			matchingCalls = append(matchingCalls, v)
 		}
@@ -210,7 +231,7 @@ func (spy *Spy) GetCallsOf(funcName string) []*Call {
 	return matchingCalls
 }
 
-func (spy *Spy) GetCall(funcName string, index int) *Call{
+func (spy *Spy) GetCall(funcName string, index int) *Call {
 	return spy.GetCallsOf(funcName)[index]
 }
 
