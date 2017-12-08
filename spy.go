@@ -60,11 +60,12 @@ func (e *Expectation) ApplyMutations(call *Call) {
 	}
 }
 
-func (e *Expectation) MutateArg(index int, callback func(interface{})) {
+func (e *Expectation) MutateArg(index int, callback func(interface{})) *Expectation {
 	e.mutators = append(e.mutators, &Mutator{
 		index:    index,
 		callback: callback,
 	})
+	return e
 }
 
 //Return Set the return values for the call
