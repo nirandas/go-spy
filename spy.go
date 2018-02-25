@@ -53,13 +53,14 @@ func NewExpectation(funcName string, m ...Matcher) *Expectation {
 	}
 }
 
-func (e *Expectation) ApplyMutations(call *Call) {
+func (e *Expectation) applyMutations(call *Call) {
 	for _, mutator := range e.mutators {
 		arg := call.GetArg(mutator.index)
 		mutator.callback(arg)
 	}
 }
 
+//Add mutator callback to be called with configured agrument index
 func (e *Expectation) MutateArg(index int, callback func(interface{})) *Expectation {
 	e.mutators = append(e.mutators, &Mutator{
 		index:    index,
@@ -135,10 +136,13 @@ func (c *Call) Get(i int) interface{} {
 	return c.expectation.ret[i]
 }
 
+
+//Get call argument by index
 func (c *Call) GetArg(i int) interface{} {
 	return c.arguments[i]
 }
 
+//Get call return value by index
 func (c *Call) GetReturnValue(index int) interface{} {
 	return c.expectation.ret[index]
 }
@@ -184,7 +188,7 @@ func (spy *Spy) Called(args ...interface{}) *Call {
 	}
 	c := NewCall(e, args...)
 	e.calls = append(e.calls, c)
-	e.ApplyMutations(c)
+	e.applyMutations(c)
 	spy.calls = append(spy.calls, c)
 
 	if len(e.set) > 0 {
@@ -222,6 +226,7 @@ func (spy *Spy) Verify(t Logger) {
 	}
 }
 
+//Get all calls of function name
 func (spy *Spy) GetCallsOf(funcName string) []*Call {
 	matchingCalls := []*Call{}
 	for _, v := range spy.calls {
@@ -232,10 +237,12 @@ func (spy *Spy) GetCallsOf(funcName string) []*Call {
 	return matchingCalls
 }
 
+//Get specific call of func name by index
 func (spy *Spy) GetCall(funcName string, index int) *Call {
 	return spy.GetCallsOf(funcName)[index]
 }
 
+//Get call count of provided function name
 func (spy *Spy) CallCount(funcName string) int {
 	return len(spy.GetCallsOf(funcName))
 }

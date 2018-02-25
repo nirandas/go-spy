@@ -1,10 +1,7 @@
-package spy_test
+package spy
 
 import (
 	"errors"
-	. "github.com/EugeneKostrikov/go-spy"
-
-	//	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"testing"
 )
