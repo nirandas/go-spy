@@ -41,3 +41,7 @@ func (s *TestObj) DoSomething(v ...interface{}) string {
 	return c.String(0)
 }
 ```
+
+## Contributors ##
+* [Nirandas Thavorath](https://github.com/nirandas)
+* [Eugene Kostrikov](https://github.com/EugeneKostrikov)
