@@ -1,10 +1,7 @@
-package spy_test
+package spy
 
 import (
 	"errors"
-	. "github.com/nirandas/go-spy"
-
-	//	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"testing"
 )
@@ -22,6 +19,25 @@ func Test_expectation_can_set_returns(t *testing.T) {
 	e.Return(1, 2)
 	Expect(e.HasReturns()).To(BeTrue())
 	Expect(e.CountReturns()).To(Equal(2))
+}
+
+func Test_expectation_can_mutate_argument(t *testing.T) {
+	RegisterTestingT(t)
+	imp := TestImplementation{}
+	imp.Spy.
+		When("DoSomething", Anything()).
+		MutateArg(0, func(arg interface{}) {
+			typed := arg.(map[string]string)
+			typed["mutated"] = "ok"
+		})
+
+	arg := map[string]string{
+		"testing": "1",
+	}
+	imp.DoSomething(arg)
+
+	Expect(arg["mutated"]).To(Equal("ok"))
+
 }
 
 func Test_call_return_values(t *testing.T) {
@@ -77,6 +93,30 @@ func Test_panics_on_unexpected_call(t *testing.T) {
 	Expect(func() {
 		s.DoSomething("Hi", "Hello")
 	}).Should(Panic())
+}
+
+func Test_spy_returns_correct_call(t *testing.T) {
+	RegisterTestingT(t)
+	s := TestImplementation{}
+	s.When("DoSomething", String("Hi")).Return("Bye")
+	s.DoSomething("Hi")
+	s.DoSomething("Hi")
+
+	calls := s.GetCallsOf("DoSomething")
+	Expect(len(calls)).To(Equal(2))
+	Expect(s.CallCount("DoSomething")).To(Equal(2))
+}
+
+func Test_spy_returns_call_by_index(t *testing.T) {
+	RegisterTestingT(t)
+	s := TestImplementation{}
+	s.When("DoSomething", String("Hi")).Return("Bye")
+	s.When("DoSomething", String("Hey")).Return("Hey")
+	s.DoSomething("Hi")
+	s.DoSomething("Hey")
+
+	Expect(s.GetCall("DoSomething", 0).GetArg(0)).To(Equal("Hi"))
+	Expect(s.GetCall("DoSomething", 1).GetArg(0)).To(Equal("Hey"))
 }
 
 type TestImplementation struct {

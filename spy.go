@@ -31,11 +31,17 @@ func Match(v []interface{}, m []Matcher) bool {
 	return true
 }
 
+type Mutator struct {
+	index    int
+	callback func(interface{})
+}
+
 type Expectation struct {
 	funcName  string
 	arguments []Matcher
 	ret       []interface{}
 	calls     []*Call
+	mutators  []*Mutator
 	set       map[int]interface{}
 }
 
@@ -45,6 +51,22 @@ func NewExpectation(funcName string, m ...Matcher) *Expectation {
 		arguments: m,
 		set:       make(map[int]interface{}),
 	}
+}
+
+func (e *Expectation) applyMutations(call *Call) {
+	for _, mutator := range e.mutators {
+		arg := call.GetArg(mutator.index)
+		mutator.callback(arg)
+	}
+}
+
+//Add mutator callback to be called with configured agrument index
+func (e *Expectation) MutateArg(index int, callback func(interface{})) *Expectation {
+	e.mutators = append(e.mutators, &Mutator{
+		index:    index,
+		callback: callback,
+	})
+	return e
 }
 
 //Return Set the return values for the call
@@ -114,6 +136,12 @@ func (c *Call) Get(i int) interface{} {
 	return c.expectation.ret[i]
 }
 
+
+//Get call argument by index
+func (c *Call) GetArg(i int) interface{} {
+	return c.arguments[i]
+}
+
 //Spy provides call spying functionalities
 //Should be embed in the struct to be mocked
 type Spy struct {
@@ -155,6 +183,7 @@ func (spy *Spy) Called(args ...interface{}) *Call {
 	}
 	c := NewCall(e, args...)
 	e.calls = append(e.calls, c)
+	e.applyMutations(c)
 	spy.calls = append(spy.calls, c)
 
 	if len(e.set) > 0 {
@@ -190,4 +219,25 @@ func (spy *Spy) Verify(t Logger) {
 	if fail > 0 {
 		t.Fail()
 	}
+}
+
+//Get all calls of function name
+func (spy *Spy) GetCallsOf(funcName string) []*Call {
+	matchingCalls := []*Call{}
+	for _, v := range spy.calls {
+		if v.name == funcName {
+			matchingCalls = append(matchingCalls, v)
+		}
+	}
+	return matchingCalls
+}
+
+//Get specific call of func name by index
+func (spy *Spy) GetCall(funcName string, index int) *Call {
+	return spy.GetCallsOf(funcName)[index]
+}
+
+//Get call count of provided function name
+func (spy *Spy) CallCount(funcName string) int {
+	return len(spy.GetCallsOf(funcName))
 }
